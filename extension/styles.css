@@ -1,0 +1,95 @@
+:root {
+  --ss-width: 380px;
+  --ss-z: 2147483647;
+  --ss-bg: #0b0f14;
+  --ss-border: rgba(255,255,255,0.12);
+  --ss-text: rgba(255,255,255,0.92);
+}
+
+#ss-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: var(--ss-width);
+  height: 100vh;
+  z-index: var(--ss-z);
+  background: var(--ss-bg);
+  border-left: 1px solid var(--ss-border);
+  box-shadow: -10px 0 30px rgba(0,0,0,0.35);
+  display: flex;
+  flex-direction: column;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+#ss-header {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--ss-border);
+  color: var(--ss-text);
+}
+
+#ss-title {
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+#ss-pill {
+  font-size: 11px;
+  padding: 3px 8px;
+  border: 1px solid var(--ss-border);
+  border-radius: 999px;
+  opacity: 0.9;
+}
+
+.ss-btn {
+  cursor: pointer;
+  border: 1px solid var(--ss-border);
+  background: transparent;
+  color: var(--ss-text);
+  font-size: 12px;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+.ss-btn:hover { background: rgba(255,255,255,0.06); }
+
+#ss-resize {
+  position: absolute;
+  left: -6px;
+  top: 0;
+  width: 12px;
+  height: 100%;
+  cursor: ew-resize;
+}
+
+#ss-iframe {
+  width: 100%;
+  height: calc(100vh - 44px);
+  border: 0;
+  background: #000;
+}
+
+#ss-launcher {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  z-index: var(--ss-z);
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  border: 1px solid var(--ss-border);
+  background: var(--ss-bg);
+  color: var(--ss-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 12px 25px rgba(0,0,0,0.35);
+  font-weight: 700;
+}
+#ss-launcher:hover { background: rgba(255,255,255,0.06); }

@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "SecondScreen Sidebar (MVP)",
+  "version": "0.1.0",
+  "description": "Shows a creator sidebar on ESPN+ pages.",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://plus.espn.com/*",
+    "https://www.espn.com/*",
+    "https://*.espn.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://plus.espn.com/*",
+        "https://www.espn.com/*",
+        "https://*.espn.com/*"
+      ],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
