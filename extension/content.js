@@ -13,9 +13,9 @@
   }
 
   function buildSidebarUrl() {
-    // Local dev sidebar page
-    return "http://localhost:3000/extension/sidebar";
-  }
+  return "https://secondscreen-chi.vercel.app/extension/sidebar";
+}
+
 
   function loadPrefs() {
     return new Promise((resolve) => {
@@ -66,6 +66,14 @@
     const iframe = document.createElement("iframe");
     iframe.id = "ss-iframe";
     iframe.src = iframeUrl;
+    iframe.addEventListener("load", () => {
+        chrome.storage.local.get(["SS_TOKEN"], (res) => {
+            const token = res.SS_TOKEN || null;
+            iframe.contentWindow?.postMessage({ type: "SS_TOKEN", token }, "*");
+        });
+    });
+
+    
     iframe.allow = "autoplay; clipboard-read; clipboard-write";
     sidebar.appendChild(iframe);
 
