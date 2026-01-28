@@ -4,7 +4,7 @@ const authRoutes = require("./routes/authRoutes");
 const roomRoutes = require("./routes/roomRoutes");
 const meRoutes = require("./routes/meRoutes");
 const http = require("http");
-// const { Server } = require("socket.io");
+const { Server } = require("./sockets/socket.io");
 // const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
@@ -88,11 +88,12 @@ app.use("/me", meRoutes);
 //   });
 // });
 
+initSocket(server);
 
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
   console.log(`API listening on ${PORT}`);
 });
 
-initSocket(server);
+
 
