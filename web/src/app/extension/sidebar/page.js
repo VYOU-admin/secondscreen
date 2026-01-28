@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { io } from "socket.io-client";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -10,8 +11,14 @@ export default function ExtensionSidebarPage() {
   const [error, setError] = useState("");
   const [token, setToken] = useState(null);
 
-  // Keep the latest token available to refresh() without stale-closure issues
+  const [chatStatus, setChatStatus] = useState("Disconnected");
+  const [messages, setMessages] = useState([]);
+  const [draft, setDraft] = useState("");
+
+  const socketRef = useRef(null);
   const tokenRef = useRef(null);
+  const roomIdRef = useRef(null);
+
   useEffect(() => {
     tokenRef.current = token;
   }, [token]);
@@ -22,7 +29,7 @@ export default function ExtensionSidebarPage() {
     } catch {}
   }
 
-  async function refresh() {
+  async function refreshRoom() {
     try {
       setError("");
 
@@ -62,53 +69,110 @@ export default function ExtensionSidebarPage() {
     }
   }
 
+  function connectSocketIfPossible(nextRoom) {
+    const t = tokenRef.current;
+    if (!t) return;
+    if (!nextRoom?.id) return;
+
+    // Already connected to same room
+    if (socketRef.current && roomIdRef.current === nextRoom.id && socketRef.current.connected) return;
+
+    // Reset old socket
+    if (socketRef.current) {
+      try {
+        socketRef.current.disconnect();
+      } catch {}
+      socketRef.current = null;
+    }
+
+    roomIdRef.current = nextRoom.id;
+    setChatStatus("Connecting…");
+
+    const s = io(API, {
+      transports: ["websocket", "polling"],
+      auth: { token: t }
+    });
+
+    socketRef.current = s;
+
+    s.on("connect", () => {
+      setChatStatus("Connected");
+      s.emit("join_room", { roomId: nextRoom.id });
+    });
+
+    s.on("chat_joined", () => {
+      setChatStatus("Joined room");
+    });
+
+    s.on("disconnect", () => {
+      setChatStatus("Disconnected");
+    });
+
+    s.on("connect_error", (e) => {
+      setChatStatus("Connect error");
+      console.error("socket connect_error:", e?.message || e);
+    });
+
+    s.on("chat_error", (payload) => {
+      setChatStatus("Chat error");
+      console.error("chat_error:", payload);
+    });
+
+    s.on("chat_message", (msg) => {
+      setMessages((prev) => [...prev, msg].slice(-200));
+    });
+  }
+
+  function sendMessage() {
+    const s = socketRef.current;
+    if (!s || !s.connected) return;
+
+    const text = draft.trim();
+    if (!text) return;
+
+    const rid = roomIdRef.current;
+    if (!rid) return;
+
+    s.emit("chat_message", { roomId: rid, text });
+    setDraft("");
+  }
+
   useEffect(() => {
-    // Listen for token from the extension (content script)
     function onMsg(e) {
       if (e?.data?.type === "SS_TOKEN") {
-        const incoming = e.data.token || null;
-        setToken(incoming);
-        // Small delay to ensure state/ref updates before refresh
-        setTimeout(() => refresh(), 50);
+        setToken(e.data.token || null);
+        setTimeout(() => refreshRoom(), 50);
       }
     }
 
     window.addEventListener("message", onMsg);
 
-    // Poll every 5 seconds in case active_room changes
-    const interval = setInterval(() => refresh(), 5000);
-
-    // Initial paint
-    refresh();
+    refreshRoom();
+    const interval = setInterval(() => refreshRoom(), 5000);
 
     return () => {
       window.removeEventListener("message", onMsg);
       clearInterval(interval);
+      if (socketRef.current) {
+        try {
+          socketRef.current.disconnect();
+        } catch {}
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (room?.id) connectSocketIfPossible(room);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [room?.id]);
+
   return (
-    <div
-      style={{
-        background: "#000",
-        color: "#fff",
-        height: "100vh",
-        padding: 12,
-        fontFamily: "system-ui"
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 8
-        }}
-      >
+    <div style={{ background: "#000", color: "#fff", height: "100vh", padding: 12, fontFamily: "system-ui" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
         <div style={{ fontWeight: 700 }}>SecondScreen</div>
         <button
-          onClick={refresh}
+          onClick={refreshRoom}
           style={{
             border: "1px solid #333",
             background: "transparent",
@@ -123,57 +187,26 @@ export default function ExtensionSidebarPage() {
         </button>
       </div>
 
-      <div style={{ opacity: 0.8, fontSize: 12, marginBottom: 12 }}>
-        {status}
-      </div>
+      <div style={{ opacity: 0.8, fontSize: 12, marginBottom: 12 }}>{status}</div>
 
       {error && (
-        <div
-          style={{
-            background: "#111",
-            border: "1px solid #333",
-            borderRadius: 12,
-            padding: 12,
-            marginBottom: 12
-          }}
-        >
-          <div style={{ fontWeight: 600 }}>Action needed</div>
-          <div style={{ fontSize: 12, opacity: 0.85, marginTop: 6 }}>
-            Make sure you’re logged in on{" "}
-            <b>secondscreen-chi.vercel.app</b> and joined a room.
-          </div>
-          <div style={{ fontSize: 12, opacity: 0.85, marginTop: 6 }}>
-            Error: {error}
-          </div>
+        <div style={{ background: "#111", border: "1px solid #333", borderRadius: 12, padding: 12, marginBottom: 12 }}>
+          <div style={{ fontWeight: 600 }}>Error</div>
+          <div style={{ fontSize: 12, opacity: 0.85, marginTop: 6 }}>{error}</div>
         </div>
       )}
 
       {!token && !error && (
-        <div
-          style={{
-            background: "#111",
-            border: "1px solid #333",
-            borderRadius: 12,
-            padding: 12
-          }}
-        >
+        <div style={{ background: "#111", border: "1px solid #333", borderRadius: 12, padding: 12, marginBottom: 12 }}>
           <div style={{ fontWeight: 600 }}>Not logged in</div>
           <div style={{ fontSize: 12, opacity: 0.85, marginTop: 6 }}>
-            Open <b>secondscreen-chi.vercel.app</b> in a tab, log in, and refresh
-            ESPN+.
+            Open <b>secondscreen-chi.vercel.app</b>, log in, then refresh ESPN+.
           </div>
         </div>
       )}
 
-      {token && !room && !error && status.includes("No active room") && (
-        <div
-          style={{
-            background: "#111",
-            border: "1px solid #333",
-            borderRadius: 12,
-            padding: 12
-          }}
-        >
+      {token && !room && !error && (
+        <div style={{ background: "#111", border: "1px solid #333", borderRadius: 12, padding: 12, marginBottom: 12 }}>
           <div style={{ fontWeight: 600 }}>No active room</div>
           <div style={{ fontSize: 12, opacity: 0.85, marginTop: 6 }}>
             Go to your site → Rooms → open the room → click <b>Join Room</b>.
@@ -183,48 +216,73 @@ export default function ExtensionSidebarPage() {
 
       {room && (
         <>
-          <div
-            style={{
-              background: "#111",
-              border: "1px solid #333",
-              borderRadius: 12,
-              padding: 12,
-              marginBottom: 12
-            }}
-          >
+          <div style={{ background: "#111", border: "1px solid #333", borderRadius: 12, padding: 12, marginBottom: 12 }}>
             <div style={{ fontWeight: 600 }}>{room.title}</div>
             <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>
               {room.provider} • {room.event_label || "No label"}
             </div>
-          </div>
-
-          <div
-            style={{
-              background: "#111",
-              border: "1px solid #333",
-              borderRadius: 12,
-              padding: 12,
-              marginBottom: 12
-            }}
-          >
-            <div style={{ fontWeight: 600 }}>Creator Stream</div>
-            <div style={{ fontSize: 12, opacity: 0.8, marginTop: 6 }}>
-              (Placeholder) Next: store a playback URL in{" "}
-              <code>room_streams</code> and render a video player here.
+            <div style={{ fontSize: 12, opacity: 0.75, marginTop: 6 }}>
+              Chat: <b>{chatStatus}</b>
             </div>
           </div>
 
-          <div
-            style={{
-              background: "#111",
-              border: "1px solid #333",
-              borderRadius: 12,
-              padding: 12
-            }}
-          >
-            <div style={{ fontWeight: 600 }}>Chat</div>
-            <div style={{ fontSize: 12, opacity: 0.8, marginTop: 6 }}>
-              (Placeholder) Next: connect Socket.IO for live chat.
+          <div style={{ background: "#111", border: "1px solid #333", borderRadius: 12, padding: 12 }}>
+            <div style={{ fontWeight: 600, marginBottom: 8 }}>Live Chat</div>
+
+            <div
+              style={{
+                height: 220,
+                overflowY: "auto",
+                border: "1px solid #222",
+                borderRadius: 10,
+                padding: 8,
+                background: "#0b0b0b",
+                marginBottom: 10
+              }}
+            >
+              {messages.length === 0 ? (
+                <div style={{ fontSize: 12, opacity: 0.7 }}>No messages yet.</div>
+              ) : (
+                messages.map((m, idx) => (
+                  <div key={idx} style={{ fontSize: 12, marginBottom: 6 }}>
+                    <span style={{ opacity: 0.75 }}>{m.from}:</span> {m.text}
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <input
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") sendMessage();
+                }}
+                placeholder="Type a message…"
+                style={{
+                  flex: 1,
+                  padding: "10px 10px",
+                  borderRadius: 10,
+                  border: "1px solid #333",
+                  background: "#000",
+                  color: "#fff",
+                  fontSize: 12
+                }}
+              />
+              <button
+                onClick={sendMessage}
+                style={{
+                  border: "1px solid #333",
+                  background: "#000",
+                  color: "#fff",
+                  borderRadius: 10,
+                  padding: "10px 12px",
+                  cursor: "pointer",
+                  fontSize: 12
+                }}
+              >
+                Send
+              </button>
             </div>
           </div>
         </>
