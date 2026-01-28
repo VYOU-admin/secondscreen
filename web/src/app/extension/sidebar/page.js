@@ -18,6 +18,7 @@ export default function ExtensionSidebarPage() {
   const socketRef = useRef(null);
   const tokenRef = useRef(null);
   const roomIdRef = useRef(null);
+  const chatEndRef = useRef(null);
 
   useEffect(() => {
     tokenRef.current = token;
@@ -167,6 +168,11 @@ export default function ExtensionSidebarPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room?.id]);
 
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+
   return (
     <div style={{ background: "#000", color: "#fff", height: "100vh", padding: 12, fontFamily: "system-ui" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
@@ -249,6 +255,7 @@ export default function ExtensionSidebarPage() {
                   </div>
                 ))
               )}
+              <div ref={chatEndRef} />
             </div>
 
             <div style={{ display: "flex", gap: 8 }}>
