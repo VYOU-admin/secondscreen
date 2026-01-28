@@ -4,7 +4,7 @@ const authRoutes = require("./routes/authRoutes");
 const roomRoutes = require("./routes/roomRoutes");
 const meRoutes = require("./routes/meRoutes");
 const http = require("http");
-const { Server } = require("./sockets/socket.io");
+const { Server } = require("./sockets/socket");
 // const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
