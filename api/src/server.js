@@ -4,11 +4,11 @@ const authRoutes = require("./routes/authRoutes");
 const roomRoutes = require("./routes/roomRoutes");
 const meRoutes = require("./routes/meRoutes");
 const http = require("http");
-const { Server } = require("./sockets/socket");
+const { Server } = require("./sockets/socket.io");
 // const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
-// const { initSocket } = require("./sockets/socket");
+const { initSocket } = require("./sockets/socket");
 const { query } = require("./db");
 
 const app = express();
