@@ -3,6 +3,7 @@ const cors = require("cors");
 const authRoutes = require("./routes/authRoutes");
 const roomRoutes = require("./routes/roomRoutes");
 const meRoutes = require("./routes/meRoutes");
+const profileRoutes = require("./routes/profileRoutes");
 const http = require("http");
 const { Server } = require("./sockets/socket");
 // const jwt = require("jsonwebtoken");
@@ -39,6 +40,7 @@ app.get("/db-check", async (req, res) => {
 app.use("/auth", authRoutes);
 app.use("/rooms", roomRoutes);
 app.use("/me", meRoutes);
+app.use("/profile", profileRoutes);
 
 // const io = new Server(server, {
 //   cors: {

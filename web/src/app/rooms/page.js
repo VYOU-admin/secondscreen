@@ -29,7 +29,10 @@ export default function RoomsPage() {
     <main className="max-w-3xl mx-auto p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Rooms</h1>
-        <button onClick={logout} className="border px-3 py-2 rounded">Log out</button>
+        <div className="flex gap-2">
+          <Link href="/profile" className="border px-3 py-2 rounded">Profile</Link>
+          <button onClick={logout} className="border px-3 py-2 rounded">Log out</button>
+        </div>
       </div>
 
       {error && <p className="text-red-600 mt-3">{error}</p>}
