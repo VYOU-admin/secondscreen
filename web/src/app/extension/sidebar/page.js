@@ -122,6 +122,11 @@ export default function ExtensionSidebarPage() {
     s.on("chat_message", (msg) => {
       setMessages((prev) => [...prev, msg].slice(-200));
     });
+    s.on("chat_history", (payload) => {
+      if (payload?.messages) {
+        setMessages(payload.messages);
+      }
+    });
   }
 
   function sendMessage() {

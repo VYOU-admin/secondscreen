@@ -1,5 +1,6 @@
 const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
+const { query } = require("../db");
 
 let io;
 
@@ -35,13 +36,33 @@ function initSocket(httpServer) {
 
     console.log("Socket connected:", socket.id, socket.data.email);
 
-    socket.on("join_room", ({ roomId }) => {
+    socket.on("join_room", async ({ roomId }) => {
       if (!roomId) return;
       socket.join(roomId);
+      
+      // Load chat history from database
+      try {
+        const result = await query(
+          "SELECT user_email, message_text, created_at FROM messages WHERE room_id = $1 ORDER BY created_at ASC LIMIT 100",
+          [roomId]
+        );
+        
+        const history = result.rows.map(row => ({
+          from: row.user_email,
+          text: row.message_text,
+          ts: new Date(row.created_at).getTime()
+        }));
+        
+        // Send history to this user only
+        socket.emit("chat_history", { messages: history });
+      } catch (err) {
+        console.error("Error loading chat history:", err);
+      }
+      
       socket.emit("chat_joined", { roomId });
     });
 
-    socket.on("chat_message", ({ roomId, text }) => {
+    socket.on("chat_message", async ({ roomId, text }) => {
       if (!roomId || !text) return;
 
       const msg = {
@@ -51,6 +72,17 @@ function initSocket(httpServer) {
         ts: Date.now()
       };
 
+      // Save message to database
+      try {
+        await query(
+          "INSERT INTO messages (room_id, user_email, message_text) VALUES ($1, $2, $3)",
+          [roomId, socket.data.email, msg.text]
+        );
+      } catch (err) {
+        console.error("Error saving message:", err);
+      }
+
+      // Broadcast message to all users in the room
       io.to(roomId).emit("chat_message", msg);
     });
 
@@ -68,4 +100,3 @@ function getIO() {
 }
 
 module.exports = { initSocket, getIO };
-
