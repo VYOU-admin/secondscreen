@@ -7,7 +7,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("viewer");
+  const [username, setUsername] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -18,7 +18,7 @@ export default function RegisterPage() {
     try {
       const data = await apiFetch("/auth/register", {
         method: "POST",
-        body: JSON.stringify({ email, password, role })
+        body: JSON.stringify({ email, password, username })
       });
       setToken(data.token);
       router.push("/rooms");
@@ -35,18 +35,33 @@ export default function RegisterPage() {
       <form onSubmit={onSubmit} className="mt-6 space-y-4">
         <label className="block">
           <div className="text-sm mb-1">Email</div>
-          <input className="w-full border p-2 rounded" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <input 
+            className="w-full border p-2 rounded" 
+            type="email"
+            value={email} 
+            onChange={(e) => setEmail(e.target.value)}
+            required 
+          />
+        </label>
+        <label className="block">
+          <div className="text-sm mb-1">Username</div>
+          <input 
+            className="w-full border p-2 rounded" 
+            value={username} 
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="3-20 characters (letters, numbers, underscores)"
+            required 
+          />
         </label>
         <label className="block">
           <div className="text-sm mb-1">Password</div>
-          <input className="w-full border p-2 rounded" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-        </label>
-        <label className="block">
-          <div className="text-sm mb-1">Role</div>
-          <select className="w-full border p-2 rounded" value={role} onChange={(e) => setRole(e.target.value)}>
-            <option value="viewer">Viewer</option>
-            <option value="creator">Creator</option>
-          </select>
+          <input 
+            className="w-full border p-2 rounded" 
+            type="password" 
+            value={password} 
+            onChange={(e) => setPassword(e.target.value)}
+            required 
+          />
         </label>
         {error && <p className="text-red-600 text-sm">{error}</p>}
         <button disabled={loading} className="w-full bg-black text-white p-2 rounded">

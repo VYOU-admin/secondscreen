@@ -7,28 +7,36 @@ const router = express.Router();
 
 router.post("/register", async (req, res) => {
   try {
-    const { email, password, role } = req.body;
+    const { email, password, username } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ ok: false, error: "Email and password required" });
+    if (!email || !password || !username) {
+      return res.status(400).json({ ok: false, error: "Email, password, and username required" });
     }
 
     const normalizedEmail = String(email).trim().toLowerCase();
-    const userRole = role && ["viewer", "creator", "admin"].includes(role) ? role : "viewer";
+    const normalizedUsername = String(username).trim().toLowerCase();
+
+    // Validate username format (alphanumeric and underscores only, 3-20 chars)
+    if (!/^[a-z0-9_]{3,20}$/.test(normalizedUsername)) {
+      return res.status(400).json({ 
+        ok: false, 
+        error: "Username must be 3-20 characters (letters, numbers, underscores only)" 
+      });
+    }
 
     const passwordHash = await bcrypt.hash(password, 10);
 
     const result = await query(
-      `INSERT INTO users (email, password_hash, role)
+      `INSERT INTO users (email, password_hash, username)
        VALUES ($1, $2, $3)
-       RETURNING id, email, role, created_at`,
-      [normalizedEmail, passwordHash, userRole]
+       RETURNING id, email, username, created_at`,
+      [normalizedEmail, passwordHash, normalizedUsername]
     );
 
     const user = result.rows[0];
 
     const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
+      { userId: user.id, email: user.email, username: user.username },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -36,7 +44,14 @@ router.post("/register", async (req, res) => {
     res.json({ ok: true, user, token });
   } catch (err) {
     if (err.code === "23505") {
-      return res.status(409).json({ ok: false, error: "Email already registered" });
+      // Check which field caused the duplicate
+      if (err.constraint?.includes("email")) {
+        return res.status(409).json({ ok: false, error: "Email already registered" });
+      }
+      if (err.constraint?.includes("username")) {
+        return res.status(409).json({ ok: false, error: "Username already taken" });
+      }
+      return res.status(409).json({ ok: false, error: "Email or username already exists" });
     }
     console.error(err);
     res.status(500).json({ ok: false, error: err.message });
@@ -54,7 +69,7 @@ router.post("/login", async (req, res) => {
     const normalizedEmail = String(email).trim().toLowerCase();
 
     const result = await query(
-      `SELECT id, email, role, password_hash
+      `SELECT id, email, username, password_hash
        FROM users
        WHERE email = $1`,
       [normalizedEmail]
@@ -67,12 +82,16 @@ router.post("/login", async (req, res) => {
     if (!ok) return res.status(401).json({ ok: false, error: "Invalid credentials" });
 
     const token = jwt.sign(
-      { userId: row.id, email: row.email, role: row.role },
+      { userId: row.id, email: row.email, username: row.username },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
-    res.json({ ok: true, user: { id: row.id, email: row.email, role: row.role }, token });
+    res.json({ 
+      ok: true, 
+      user: { id: row.id, email: row.email, username: row.username }, 
+      token 
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ ok: false, error: err.message });
