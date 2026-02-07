@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 
 export default function RoomDetailPage() {
   const params = useParams();
@@ -13,23 +14,24 @@ export default function RoomDetailPage() {
   const [joining, setJoining] = useState(false);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const data = await apiFetch("/rooms");
-        const found = (data.rooms || []).find((r) => r.id === roomId);
-        setRoom(found || null);
-      } catch (err) {
-        setError(err.message);
-      }
-    })();
+    loadRoom();
   }, [roomId]);
+
+  async function loadRoom() {
+    try {
+      const data = await apiFetch(`/rooms/${roomId}`);
+      setRoom(data.room);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
 
   async function joinRoom() {
     setMsg("");
     setJoining(true);
     try {
       await apiFetch(`/rooms/${roomId}/join`, { method: "POST" });
-      setMsg("✅ Joined. Now open ESPN+ in a tab — the extension sidebar will load this room automatically.");
+      setMsg("✅ Joined! Now open ESPN+ in a tab — the extension sidebar will load this room automatically.");
     } catch (err) {
       setMsg(`❌ ${err.message}`);
     } finally {
@@ -37,44 +39,144 @@ export default function RoomDetailPage() {
     }
   }
 
-  const espnUrl = room?.espn_url || "https://plus.espn.com/";
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <Link href="/events" className="text-blue-600 underline">← Back to Events</Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!room) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-500">Loading room...</p>
+      </div>
+    );
+  }
+
+  const espnUrl = room.espn_url || room.event_espn_url || "https://plus.espn.com/";
 
   return (
-    <main className="max-w-3xl mx-auto p-6">
-      <a className="underline" href="/rooms">← Back</a>
+    <div className="min-h-screen bg-gray-50">
+      {/* Top Navigation */}
+      <nav className="bg-white border-b">
+        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+          <Link href={room.event_id ? `/events/${room.event_id}` : "/events"} className="text-sm text-gray-600 hover:text-black">
+            ← Back to Event
+          </Link>
+          <Link href="/events" className="text-sm font-semibold">
+            SecondScreen
+          </Link>
+        </div>
+      </nav>
 
-      {error && <p className="text-red-600 mt-4">{error}</p>}
+      <div className="max-w-4xl mx-auto px-6 py-8">
+        {/* Room Header */}
+        <div className="bg-white rounded-lg border p-8 mb-8">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-3">
+                <h1 className="text-3xl font-bold">{room.title}</h1>
+                {room.is_live && (
+                  <span className="bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                    <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                    LIVE
+                  </span>
+                )}
+              </div>
+              
+              <p className="text-gray-600 mb-2">
+                Hosted by <span className="font-semibold">@{room.creator_username || "Unknown"}</span>
+              </p>
 
-      {room ? (
-        <>
-          <h1 className="text-2xl font-semibold mt-4">{room.title}</h1>
-          <p className="opacity-70 mt-1">{room.provider} • {room.event_label || "No label"}</p>
+              {room.event_title && (
+                <p className="text-sm text-gray-500">
+                  Event: {room.event_title} • {room.event_sport}
+                </p>
+              )}
+            </div>
 
-          <div className="mt-6 space-y-3">
-            <button onClick={joinRoom} disabled={joining} className="w-full bg-black text-white p-3 rounded">
-              {joining ? "Joining..." : "Join Room"}
-            </button>
-
-            {msg && <p className="text-sm">{msg}</p>}
-
-            <a className="block w-full text-center border p-3 rounded" href={espnUrl} target="_blank" rel="noreferrer">
-              Open ESPN+ in new tab
-            </a>
-
-            <div className="border rounded p-3 text-sm">
-              <div className="font-semibold mb-1">Next:</div>
-              <ol className="list-decimal ml-5 space-y-1">
-                <li>Click <b>Join Room</b></li>
-                <li>Click <b>Open ESPN+</b></li>
-                <li>Install extension (next step)</li>
-                <li>Switch to ESPN+ tab — sidebar appears</li>
-              </ol>
+            <div className="text-right">
+              <div className="text-3xl font-bold">{room.viewer_count || 0}</div>
+              <div className="text-sm text-gray-500">viewers</div>
             </div>
           </div>
-        </>
-      ) : (
-        <p className="mt-6 opacity-70">Loading room…</p>
-      )}
-    </main>
+
+          {room.event_label && (
+            <div className="text-sm text-gray-600 mt-2">
+              {room.provider} • {room.event_label}
+            </div>
+          )}
+        </div>
+
+        {/* Instructions */}
+        <div className="bg-white rounded-lg border p-6 mb-8">
+          <h2 className="font-semibold text-lg mb-4">How to Join This Watch Party</h2>
+          
+          <div className="space-y-4">
+            <div className="flex gap-4">
+              <div className="w-8 h-8 bg-black text-white rounded-full flex items-center justify-center flex-shrink-0 font-bold">
+                1
+              </div>
+              <div className="flex-1">
+                <h3 className="font-medium mb-1">Join the Room</h3>
+                <p className="text-sm text-gray-600">Click the button below to join this watch party</p>
+                <button 
+                  onClick={joinRoom} 
+                  disabled={joining} 
+                  className="mt-2 w-full bg-black text-white p-3 rounded-lg font-semibold hover:bg-gray-800 transition disabled:opacity-50"
+                >
+                  {joining ? "Joining..." : "Join Room"}
+                </button>
+                {msg && <p className="text-sm mt-2">{msg}</p>}
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <div className="w-8 h-8 bg-black text-white rounded-full flex items-center justify-center flex-shrink-0 font-bold">
+                2
+              </div>
+              <div className="flex-1">
+                <h3 className="font-medium mb-1">Open ESPN+</h3>
+                <p className="text-sm text-gray-600 mb-2">Open the game in a new tab</p>
+                <a 
+                  href={espnUrl} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="block w-full text-center border-2 border-black p-3 rounded-lg font-semibold hover:bg-gray-50 transition"
+                >
+                  Open ESPN+ →
+                </a>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <div className="w-8 h-8 bg-black text-white rounded-full flex items-center justify-center flex-shrink-0 font-bold">
+                3
+              </div>
+              <div className="flex-1">
+                <h3 className="font-medium mb-1">Install Extension</h3>
+                <p className="text-sm text-gray-600">The sidebar will appear with the stream and chat</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Extension CTA */}
+        <div className="bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-lg p-8 text-center">
+          <h2 className="text-2xl font-bold mb-2">Don't have the extension yet?</h2>
+          <p className="mb-6 opacity-90">
+            Install our Chrome extension to watch with the streamer and chat in real-time
+          </p>
+          <button className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition">
+            Install Chrome Extension
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

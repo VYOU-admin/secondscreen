@@ -13,7 +13,7 @@ export default function HomePage() {
     if (token) {
       setIsLoggedIn(true);
       // Redirect logged-in users to rooms
-      router.push("/rooms");
+      router.push("/events");
     }
   }, [router]);
 
