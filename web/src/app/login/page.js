@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { apiFetch, setToken } from "@/lib/api";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -29,25 +30,71 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="max-w-md mx-auto p-6">
-      <h1 className="text-2xl font-semibold">Log in</h1>
-      <form onSubmit={onSubmit} className="mt-6 space-y-4">
-        <label className="block">
-          <div className="text-sm mb-1">Email</div>
-          <input className="w-full border p-2 rounded" value={email} onChange={(e) => setEmail(e.target.value)} />
-        </label>
-        <label className="block">
-          <div className="text-sm mb-1">Password</div>
-          <input className="w-full border p-2 rounded" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-        </label>
-        {error && <p className="text-red-600 text-sm">{error}</p>}
-        <button disabled={loading} className="w-full bg-black text-white p-2 rounded">
-          {loading ? "Logging in..." : "Log in"}
-        </button>
-      </form>
-      <p className="mt-4 text-sm">
-        Need an account? <a className="underline" href="/register">Register</a>
-      </p>
-    </main>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center p-6">
+      <div className="max-w-md w-full">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <Link href="/" className="text-2xl font-bold">SecondScreen</Link>
+          <h1 className="text-3xl font-bold mt-6 mb-2">Welcome back</h1>
+          <p className="text-gray-600">Log in to continue watching</p>
+        </div>
+
+        {/* Form Card */}
+        <div className="bg-white rounded-lg shadow-lg p-8">
+          <form onSubmit={onSubmit} className="space-y-4">
+            <label className="block">
+              <div className="text-sm font-medium mb-2">Email</div>
+              <input 
+                className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-black" 
+                type="email"
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+              />
+            </label>
+
+            <label className="block">
+              <div className="text-sm font-medium mb-2">Password</div>
+              <input 
+                className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-black" 
+                type="password" 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+              />
+            </label>
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
+
+            <button 
+              disabled={loading} 
+              className="w-full bg-black text-white p-3 rounded-lg font-semibold hover:bg-gray-800 transition disabled:opacity-50"
+            >
+              {loading ? "Logging in..." : "Log In"}
+            </button>
+          </form>
+
+          <p className="mt-6 text-center text-sm text-gray-600">
+            Don't have an account?{" "}
+            <Link href="/register" className="font-semibold text-black hover:underline">
+              Sign up
+            </Link>
+          </p>
+        </div>
+
+        {/* Back to home */}
+        <div className="text-center mt-6">
+          <Link href="/" className="text-sm text-gray-600 hover:text-black">
+            ← Back to home
+          </Link>
+        </div>
+      </div>
+    </div>
   );
 }

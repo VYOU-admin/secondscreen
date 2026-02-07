@@ -1,65 +1,143 @@
-import Image from "next/image";
+"use client";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
-export default function Home() {
+export default function HomePage() {
+  const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    // Check if user is already logged in
+    const token = localStorage.getItem("token");
+    if (token) {
+      setIsLoggedIn(true);
+      // Redirect logged-in users to rooms
+      router.push("/rooms");
+    }
+  }, [router]);
+
+  // Don't show landing page if user is logged in (they'll be redirected)
+  if (isLoggedIn) {
+    return null;
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.js file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <main className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      {/* Navigation Bar */}
+      <nav className="border-b bg-white">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="text-xl font-bold">SecondScreen</div>
+          <div className="flex gap-3">
+            <Link 
+              href="/login" 
+              className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-50 transition"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              Log in
+            </Link>
+            <Link 
+              href="/register" 
+              className="px-4 py-2 rounded bg-black text-white hover:bg-gray-800 transition"
             >
-              Learning
-            </a>{" "}
-            center.
+              Sign up
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <div className="max-w-4xl mx-auto px-6 py-20 text-center">
+        <h1 className="text-5xl font-bold mb-6">
+          Watch Sports Together.<br />
+          Stream Your Commentary.
+        </h1>
+        
+        <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
+          SecondScreen lets you watch live sports with friends while creators stream their 
+          commentary in real-time. Join watch parties, chat with other fans, and experience 
+          the game like never before.
+        </p>
+
+        <div className="flex gap-4 justify-center">
+          <Link 
+            href="/register" 
+            className="px-8 py-4 rounded-lg bg-black text-white text-lg font-semibold hover:bg-gray-800 transition"
+          >
+            Get Started Free
+          </Link>
+          <Link 
+            href="/login" 
+            className="px-8 py-4 rounded-lg border-2 border-gray-300 text-lg font-semibold hover:bg-gray-50 transition"
+          >
+            Log in
+          </Link>
+        </div>
+      </div>
+
+      {/* Features Section */}
+      <div className="max-w-6xl mx-auto px-6 py-16">
+        <h2 className="text-3xl font-bold text-center mb-12">How It Works</h2>
+        
+        <div className="grid md:grid-cols-3 gap-8">
+          {/* Feature 1 */}
+          <div className="text-center p-6">
+            <div className="w-16 h-16 bg-black text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+              1
+            </div>
+            <h3 className="text-xl font-semibold mb-3">Create or Join a Room</h3>
+            <p className="text-gray-600">
+              Pick a game or event you want to watch. Create your own watch party or join an existing one.
+            </p>
+          </div>
+
+          {/* Feature 2 */}
+          <div className="text-center p-6">
+            <div className="w-16 h-16 bg-black text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+              2
+            </div>
+            <h3 className="text-xl font-semibold mb-3">Install the Extension</h3>
+            <p className="text-gray-600">
+              Add our Chrome extension to your browser. It creates a sidebar on ESPN+ and other sports sites.
+            </p>
+          </div>
+
+          {/* Feature 3 */}
+          <div className="text-center p-6">
+            <div className="w-16 h-16 bg-black text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+              3
+            </div>
+            <h3 className="text-xl font-semibold mb-3">Watch & Chat Live</h3>
+            <p className="text-gray-600">
+              Watch the game with creator commentary streaming live. Chat with other viewers in real-time.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* CTA Section */}
+      <div className="bg-black text-white py-16 mt-16">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <h2 className="text-3xl font-bold mb-4">
+            Ready to Transform Your Sports Watching?
+          </h2>
+          <p className="text-xl mb-8 text-gray-300">
+            Join thousands of fans watching together on SecondScreen.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link 
+            href="/register" 
+            className="inline-block px-8 py-4 rounded-lg bg-white text-black text-lg font-semibold hover:bg-gray-100 transition"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            Sign Up Now - It's Free
+          </Link>
         </div>
-      </main>
-    </div>
+      </div>
+
+      {/* Footer */}
+      <footer className="border-t py-8 mt-16">
+        <div className="max-w-6xl mx-auto px-6 text-center text-gray-600 text-sm">
+          © 2025 SecondScreen. All rights reserved.
+        </div>
+      </footer>
+    </main>
   );
 }
