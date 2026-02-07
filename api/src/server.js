@@ -4,6 +4,7 @@ const authRoutes = require("./routes/authRoutes");
 const roomRoutes = require("./routes/roomRoutes");
 const meRoutes = require("./routes/meRoutes");
 const profileRoutes = require("./routes/profileRoutes");
+const eventRoutes = require("./routes/eventRoutes");
 const http = require("http");
 const { Server } = require("./sockets/socket");
 // const jwt = require("jsonwebtoken");
@@ -41,6 +42,7 @@ app.use("/auth", authRoutes);
 app.use("/rooms", roomRoutes);
 app.use("/me", meRoutes);
 app.use("/profile", profileRoutes);
+app.use("/events", eventRoutes);
 
 // const io = new Server(server, {
 //   cors: {
