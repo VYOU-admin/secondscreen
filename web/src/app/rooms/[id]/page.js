@@ -14,7 +14,6 @@ export default function RoomDetailPage() {
   const [joining, setJoining] = useState(false);
   const [participants, setParticipants] = useState([]);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
-  const [isCreator, setIsCreator] = useState(false);
   const [toggleLiveLoading, setToggleLiveLoading] = useState(false);
 
   useEffect(() => {
@@ -37,6 +36,7 @@ export default function RoomDetailPage() {
       setError(err.message);
     }
   }
+
   async function loadParticipants() {
     try {
       setLoadingParticipants(true);
@@ -48,6 +48,7 @@ export default function RoomDetailPage() {
       setLoadingParticipants(false);
     }
   }
+
   async function toggleLiveStatus() {
     if (!room) return;
     
@@ -154,13 +155,7 @@ export default function RoomDetailPage() {
               {room.provider} • {room.event_label}
             </div>
           )}
-          {room.event_label && (
-            <div className="text-sm text-gray-600 mt-2">
-              {room.provider} • {room.event_label}
-            </div>
-          )}
 
-          {/* ADD THIS ENTIRE SECTION HERE */}
           {/* Go Live Button */}
           <div className="mt-4 pt-4 border-t">
             <button
@@ -184,12 +179,8 @@ export default function RoomDetailPage() {
                 : "Start streaming to let viewers know you're live"}
             </p>
           </div>
-          {/* END OF NEW SECTION */}
         </div>
-        </div>
-        </div>  {/* End of Room Header */}
 
-        {/* ADD THIS ENTIRE NEW SECTION HERE */}
         {/* Participants Section */}
         {participants.length > 0 && (
           <div className="bg-white rounded-lg border p-6 mb-8">
@@ -212,11 +203,6 @@ export default function RoomDetailPage() {
             </div>
           </div>
         )}
-        {/* END OF NEW SECTION */}
-
-        {/* Instructions */}
-        <div className="bg-white rounded-lg border p-6 mb-8">
-          <h2 className="font-semibold text-lg mb-4">How to Join This Watch Party</h2>
 
         {/* Instructions */}
         <div className="bg-white rounded-lg border p-6 mb-8">
