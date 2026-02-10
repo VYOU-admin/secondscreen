@@ -150,6 +150,17 @@ export default function EventDetailPage() {
                     <div className="text-sm text-gray-600 mb-3">
                       Hosted by <span className="font-medium">@{room.creator_username || "Unknown"}</span>
                     </div>
+                    <div className="text-sm text-gray-600 mb-3">
+                      Hosted by <span className="font-medium">@{room.creator_username || "Unknown"}</span>
+                    </div>
+                    
+                    {/* ADD THIS NEW SECTION HERE */}
+                    {room.description && (
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                        {room.description}
+                      </p>
+                    )}
+                    {/* END OF NEW SECTION */}
                     
                     <div className="flex items-center gap-4 text-sm text-gray-500">
                       <span>👥 {room.viewer_count || 0} viewers</span>

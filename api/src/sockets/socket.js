@@ -40,6 +40,51 @@ function initSocket(httpServer) {
       if (!roomId) return;
       socket.join(roomId);
       
+      // Track participant in database
+      try {
+        await query(
+          `INSERT INTO room_participants (room_id, user_id, username, joined_at, last_seen)
+           VALUES ($1, $2, $3, NOW(), NOW())
+           ON CONFLICT (room_id, user_id) 
+           DO UPDATE SET last_seen = NOW()`,
+          [roomId, socket.data.userId, socket.data.email]
+        );
+
+        // Update viewer count
+        const countResult = await query(
+          `SELECT COUNT(*) as count FROM room_participants WHERE room_id = $1`,
+          [roomId]
+        );
+        
+        await query(
+          `UPDATE rooms SET viewer_count = $1 WHERE id = $2`,
+          [countResult.rows[0].count, roomId]
+        );
+
+        // Broadcast updated viewer count to all in room
+        io.to(roomId).emit("viewer_count_update", { 
+          roomId, 
+          count: parseInt(countResult.rows[0].count) 
+        });
+
+        // Get and broadcast participant list
+        const participantsResult = await query(
+          `SELECT user_id, username, joined_at 
+           FROM room_participants 
+           WHERE room_id = $1 
+           ORDER BY joined_at ASC`,
+          [roomId]
+        );
+        
+        io.to(roomId).emit("participants_update", { 
+          roomId, 
+          participants: participantsResult.rows 
+        });
+
+      } catch (err) {
+        console.error("Error tracking participant:", err);
+      }
+      
       // Load chat history from database
       try {
         const result = await query(
@@ -86,8 +131,62 @@ function initSocket(httpServer) {
       io.to(roomId).emit("chat_message", msg);
     });
 
-    socket.on("disconnect", () => {
+    socket.on("disconnect", async () => {
       console.log("Socket disconnected:", socket.id);
+      
+      // Remove from all rooms they were in
+      try {
+        const userId = socket.data.userId;
+        if (userId) {
+          // Get rooms user was in
+          const roomsResult = await query(
+            `SELECT room_id FROM room_participants WHERE user_id = $1`,
+            [userId]
+          );
+          
+          // Remove from participants
+          await query(
+            `DELETE FROM room_participants WHERE user_id = $1`,
+            [userId]
+          );
+
+          // Update viewer counts and broadcast for each room
+          for (const row of roomsResult.rows) {
+            const roomId = row.room_id;
+            
+            const countResult = await query(
+              `SELECT COUNT(*) as count FROM room_participants WHERE room_id = $1`,
+              [roomId]
+            );
+            
+            await query(
+              `UPDATE rooms SET viewer_count = $1 WHERE id = $2`,
+              [countResult.rows[0].count, roomId]
+            );
+
+            io.to(roomId).emit("viewer_count_update", { 
+              roomId, 
+              count: parseInt(countResult.rows[0].count) 
+            });
+
+            // Broadcast updated participants
+            const participantsResult = await query(
+              `SELECT user_id, username, joined_at 
+               FROM room_participants 
+               WHERE room_id = $1 
+               ORDER BY joined_at ASC`,
+              [roomId]
+            );
+            
+            io.to(roomId).emit("participants_update", { 
+              roomId, 
+              participants: participantsResult.rows 
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Error cleaning up participant on disconnect:", err);
+      }
     });
   });
 

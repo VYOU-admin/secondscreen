@@ -14,6 +14,8 @@ export default function ExtensionSidebarPage() {
   const [chatStatus, setChatStatus] = useState("Disconnected");
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState("");
+  const [participants, setParticipants] = useState([]);
+  const [viewerCount, setViewerCount] = useState(0);
 
   const socketRef = useRef(null);
   const tokenRef = useRef(null);
@@ -127,6 +129,13 @@ export default function ExtensionSidebarPage() {
         setMessages(payload.messages);
       }
     });
+    s.on("viewer_count_update", (payload) => {
+      setViewerCount(payload.count || 0);
+    });
+
+    s.on("participants_update", (payload) => {
+      setParticipants(payload.participants || []);
+    });
   }
 
   function sendMessage() {
@@ -235,7 +244,26 @@ export default function ExtensionSidebarPage() {
             <div style={{ fontSize: 12, opacity: 0.75, marginTop: 6 }}>
               Chat: <b>{chatStatus}</b>
             </div>
+            <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
+              <span>👥</span>
+              <b>{viewerCount}</b> 
+              <span>watching</span>
+            </div>
           </div>
+
+          {/* Participants List */}
+          {participants.length > 0 && (
+            <div style={{ background: "#111", border: "1px solid #333", borderRadius: 12, padding: 12, marginBottom: 12 }}>
+              <div style={{ fontWeight: 600, marginBottom: 8 }}>In This Room</div>
+              <div style={{ maxHeight: 100, overflowY: "auto" }}>
+                {participants.map((p, idx) => (
+                  <div key={idx} style={{ fontSize: 12, padding: "4px 0", opacity: 0.85 }}>
+                    • {p.username}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div style={{ background: "#111", border: "1px solid #333", borderRadius: 12, padding: 12 }}>
             <div style={{ fontWeight: 600, marginBottom: 8 }}>Live Chat</div>

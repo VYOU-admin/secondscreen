@@ -12,9 +12,21 @@ export default function RoomDetailPage() {
   const [error, setError] = useState("");
   const [msg, setMsg] = useState("");
   const [joining, setJoining] = useState(false);
+  const [participants, setParticipants] = useState([]);
+  const [loadingParticipants, setLoadingParticipants] = useState(false);
+  const [isCreator, setIsCreator] = useState(false);
+  const [toggleLiveLoading, setToggleLiveLoading] = useState(false);
 
   useEffect(() => {
     loadRoom();
+    loadParticipants();
+    
+    // Refresh participants every 10 seconds
+    const interval = setInterval(() => {
+      loadParticipants();
+    }, 10000);
+    
+    return () => clearInterval(interval);
   }, [roomId]);
 
   async function loadRoom() {
@@ -23,6 +35,37 @@ export default function RoomDetailPage() {
       setRoom(data.room);
     } catch (err) {
       setError(err.message);
+    }
+  }
+  async function loadParticipants() {
+    try {
+      setLoadingParticipants(true);
+      const data = await apiFetch(`/rooms/${roomId}/participants`);
+      setParticipants(data.participants || []);
+    } catch (err) {
+      console.error("Error loading participants:", err);
+    } finally {
+      setLoadingParticipants(false);
+    }
+  }
+  async function toggleLiveStatus() {
+    if (!room) return;
+    
+    setToggleLiveLoading(true);
+    try {
+      const newStatus = !room.is_live;
+      await apiFetch(`/rooms/${roomId}`, {
+        method: "PUT",
+        body: JSON.stringify({ is_live: newStatus })
+      });
+      
+      // Reload room to get updated status
+      await loadRoom();
+      setMsg(newStatus ? "✅ You're now live!" : "✅ Stream ended");
+    } catch (err) {
+      setMsg(`❌ ${err.message}`);
+    } finally {
+      setToggleLiveLoading(false);
     }
   }
 
@@ -111,7 +154,69 @@ export default function RoomDetailPage() {
               {room.provider} • {room.event_label}
             </div>
           )}
+          {room.event_label && (
+            <div className="text-sm text-gray-600 mt-2">
+              {room.provider} • {room.event_label}
+            </div>
+          )}
+
+          {/* ADD THIS ENTIRE SECTION HERE */}
+          {/* Go Live Button */}
+          <div className="mt-4 pt-4 border-t">
+            <button
+              onClick={toggleLiveStatus}
+              disabled={toggleLiveLoading}
+              className={`w-full p-3 rounded-lg font-semibold transition ${
+                room.is_live 
+                  ? "bg-red-600 text-white hover:bg-red-700" 
+                  : "bg-green-600 text-white hover:bg-green-700"
+              } disabled:opacity-50`}
+            >
+              {toggleLiveLoading 
+                ? "Updating..." 
+                : room.is_live 
+                  ? "🔴 End Stream" 
+                  : "🎥 Go Live"}
+            </button>
+            <p className="text-xs text-gray-500 mt-2 text-center">
+              {room.is_live 
+                ? "You're currently streaming" 
+                : "Start streaming to let viewers know you're live"}
+            </p>
+          </div>
+          {/* END OF NEW SECTION */}
         </div>
+        </div>
+        </div>  {/* End of Room Header */}
+
+        {/* ADD THIS ENTIRE NEW SECTION HERE */}
+        {/* Participants Section */}
+        {participants.length > 0 && (
+          <div className="bg-white rounded-lg border p-6 mb-8">
+            <h2 className="font-semibold text-lg mb-4">
+              Currently Watching ({participants.length})
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {participants.map((participant, idx) => (
+                <div key={idx} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                  <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-sm font-semibold">
+                    {participant.username?.charAt(0).toUpperCase() || "?"}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">
+                      {participant.display_name || participant.username}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {/* END OF NEW SECTION */}
+
+        {/* Instructions */}
+        <div className="bg-white rounded-lg border p-6 mb-8">
+          <h2 className="font-semibold text-lg mb-4">How to Join This Watch Party</h2>
 
         {/* Instructions */}
         <div className="bg-white rounded-lg border p-6 mb-8">

@@ -16,6 +16,7 @@ export default function CreateRoomPage() {
   const [espnUrl, setEspnUrl] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [description, setDescription] = useState("");
 
   useEffect(() => {
     loadEvent();
@@ -49,7 +50,8 @@ export default function CreateRoomPage() {
           event_id: eventId,
           provider,
           event_label: eventLabel,
-          espn_url: espnUrl
+          espn_url: espnUrl,
+          description: description || null  // ADD THIS LINE
         })
       });
 
@@ -135,6 +137,22 @@ export default function CreateRoomPage() {
                 placeholder="e.g., Game 7 - NBA Finals"
                 className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
               />
+            </div>
+            {/* Description */}
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Room Description
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Tell viewers what to expect from your stream..."
+                rows={3}
+                className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Optional - Describe your commentary style, what you'll focus on, etc.
+              </p>
             </div>
 
             {/* ESPN URL */}

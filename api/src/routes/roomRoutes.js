@@ -60,7 +60,7 @@ router.get("/:id", async (req, res) => {
 // Create new room
 router.post("/", requireAuth, async (req, res) => {
   try {
-    const { title, event_id, provider, event_label, espn_url } = req.body;
+    const { title, event_id, provider, event_label, espn_url, description } = req.body;
     
     if (!title || !event_id) {
       return res.status(400).json({ 
@@ -76,10 +76,10 @@ router.post("/", requireAuth, async (req, res) => {
     }
     
     const result = await query(
-      `INSERT INTO rooms (title, event_id, provider, event_label, espn_url, created_by, creator_user_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO rooms (title, event_id, provider, event_label, espn_url, description, created_by, creator_user_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
-      [title, event_id, provider, event_label, espn_url, req.user.userId.toString(), req.user.userId]
+      [title, event_id, provider, event_label, espn_url, description, req.user.userId.toString(), req.user.userId]
     );
     
     res.json({ ok: true, room: result.rows[0] });
@@ -125,6 +125,112 @@ router.put("/:id", requireAuth, async (req, res) => {
     }
     
     res.json({ ok: true, room: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Get participants in a room
+router.get("/:id/participants", async (req, res) => {
+  try {
+    const result = await query(
+      `SELECT rp.user_id, rp.username, rp.joined_at, rp.last_seen,
+              u.display_name, u.profile_picture_url
+       FROM room_participants rp
+       LEFT JOIN users u ON rp.user_id = u.id
+       WHERE rp.room_id = $1
+       ORDER BY rp.joined_at ASC`,
+      [req.params.id]
+    );
+    
+    res.json({ ok: true, participants: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Join room as participant (track presence)
+router.post("/:id/enter", requireAuth, async (req, res) => {
+  try {
+    const roomId = req.params.id;
+    const userId = req.user.userId;
+    const username = req.user.username;
+
+    // Verify room exists
+    const roomCheck = await query(`SELECT id FROM rooms WHERE id = $1`, [roomId]);
+    if (roomCheck.rows.length === 0) {
+      return res.status(404).json({ ok: false, error: "Room not found" });
+    }
+
+    // Add or update participant
+    await query(
+      `INSERT INTO room_participants (room_id, user_id, username, joined_at, last_seen)
+       VALUES ($1, $2, $3, NOW(), NOW())
+       ON CONFLICT (room_id, user_id) 
+       DO UPDATE SET last_seen = NOW()`,
+      [roomId, userId, username]
+    );
+
+    // Update viewer count
+    const countResult = await query(
+      `SELECT COUNT(*) as count FROM room_participants WHERE room_id = $1`,
+      [roomId]
+    );
+    
+    await query(
+      `UPDATE rooms SET viewer_count = $1 WHERE id = $2`,
+      [countResult.rows[0].count, roomId]
+    );
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Leave room (remove from participants)
+router.post("/:id/leave", requireAuth, async (req, res) => {
+  try {
+    const roomId = req.params.id;
+    const userId = req.user.userId;
+
+    await query(
+      `DELETE FROM room_participants WHERE room_id = $1 AND user_id = $2`,
+      [roomId, userId]
+    );
+
+    // Update viewer count
+    const countResult = await query(
+      `SELECT COUNT(*) as count FROM room_participants WHERE room_id = $1`,
+      [roomId]
+    );
+    
+    await query(
+      `UPDATE rooms SET viewer_count = $1 WHERE id = $2`,
+      [countResult.rows[0].count, roomId]
+    );
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Heartbeat - update last_seen timestamp
+router.post("/:id/heartbeat", requireAuth, async (req, res) => {
+  try {
+    await query(
+      `UPDATE room_participants 
+       SET last_seen = NOW() 
+       WHERE room_id = $1 AND user_id = $2`,
+      [req.params.id, req.user.userId]
+    );
+    
+    res.json({ ok: true });
   } catch (err) {
     console.error(err);
     res.status(500).json({ ok: false, error: err.message });
