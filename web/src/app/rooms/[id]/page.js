@@ -74,7 +74,15 @@ export default function RoomDetailPage() {
     setMsg("");
     setJoining(true);
     try {
+      // Set as active room
       await apiFetch(`/rooms/${roomId}/join`, { method: "POST" });
+      
+      // Also track as participant
+      await apiFetch(`/rooms/${roomId}/enter`, { method: "POST" });
+      
+      // Reload participants to show updated count
+      await loadParticipants();
+      
       setMsg("✅ Joined! Now open ESPN+ in a tab — the extension sidebar will load this room automatically.");
     } catch (err) {
       setMsg(`❌ ${err.message}`);
