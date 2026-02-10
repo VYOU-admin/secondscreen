@@ -47,7 +47,7 @@ function initSocket(httpServer) {
            VALUES ($1, $2, $3, NOW(), NOW())
            ON CONFLICT (room_id, user_id) 
            DO UPDATE SET last_seen = NOW()`,
-          [roomId, socket.data.userId, socket.data.email]
+          [roomId, socket.data.userId ? socket.data.userId.toString() : null, socket.data.email]
         );
 
         // Update viewer count
@@ -141,13 +141,13 @@ function initSocket(httpServer) {
           // Get rooms user was in
           const roomsResult = await query(
             `SELECT room_id FROM room_participants WHERE user_id = $1`,
-            [userId]
+            [userId ? userId.toString() : null]
           );
           
           // Remove from participants
           await query(
             `DELETE FROM room_participants WHERE user_id = $1`,
-            [userId]
+            [userId ? userId.toString() : null]
           );
 
           // Update viewer counts and broadcast for each room

@@ -152,6 +152,7 @@ router.get("/:id/participants", async (req, res) => {
 });
 
 // Join room as participant (track presence)
+// Join room as participant (track presence)
 router.post("/:id/enter", requireAuth, async (req, res) => {
   try {
     const roomId = req.params.id;
@@ -164,13 +165,13 @@ router.post("/:id/enter", requireAuth, async (req, res) => {
       return res.status(404).json({ ok: false, error: "Room not found" });
     }
 
-    // Add or update participant
+    // Add or update participant (cast user_id to UUID)
     await query(
       `INSERT INTO room_participants (room_id, user_id, username, joined_at, last_seen)
-       VALUES ($1, $2, $3, NOW(), NOW())
+       VALUES ($1, $2::uuid, $3, NOW(), NOW())
        ON CONFLICT (room_id, user_id) 
        DO UPDATE SET last_seen = NOW()`,
-      [roomId, userId, username]
+      [roomId, userId.toString(), username]
     );
 
     // Update viewer count
